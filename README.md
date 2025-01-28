@@ -2,6 +2,9 @@
 
 A modern, real-time status page system built with FastAPI and React. Monitor your services, manage incidents, and keep your users informed about system status.
 
+## Deployed Website:
+https://status-page-eta-pearl.vercel.app/
+
 ## 🎥 Demo
 
 <div align="center">
