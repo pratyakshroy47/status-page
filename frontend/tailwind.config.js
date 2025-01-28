@@ -42,10 +42,11 @@ module.exports = {
       },
       animation: {
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.4s ease-out',
+        'fade-in': 'fade-in 0.2s ease-out',
+        'slide-up': 'slide-up 0.2s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
         'glow': 'glow 1.5s ease-in-out infinite alternate',
+        'scale-up': 'scale-up 0.2s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -63,7 +64,19 @@ module.exports = {
         glow: {
           '0%': { boxShadow: '0 0 0 rgba(16, 185, 129, 0.1)' },
           '100%': { boxShadow: '0 0 20px rgba(16, 185, 129, 0.2)' },
-        }
+        },
+        'slide-up': {
+          '0%': { transform: 'translateY(1rem)', opacity: 0 },
+          '100%': { transform: 'translateY(0)', opacity: 1 },
+        },
+        'scale-up': {
+          '0%': { transform: 'scale(0.95)', opacity: 0 },
+          '100%': { transform: 'scale(1)', opacity: 1 },
+        },
+        'fade-in': {
+          '0%': { opacity: 0 },
+          '100%': { opacity: 1 },
+        },
       },
     },
   },
