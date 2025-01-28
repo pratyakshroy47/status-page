@@ -1,11 +1,30 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  maxRedirects: 5,
+  validateStatus: function (status) {
+    return status >= 200 && status < 400;
+  }
 });
+
+// Add a request interceptor for debugging
+api.interceptors.request.use(request => {
+  console.log('Starting Request:', request)
+  return request
+})
+
+// Add a response interceptor for debugging
+api.interceptors.response.use(response => {
+  console.log('Response:', response)
+  return response
+}, error => {
+  console.error('API Error:', error)
+  return Promise.reject(error)
+})
 
 // Organizations
 export const getOrganizations = async () => {

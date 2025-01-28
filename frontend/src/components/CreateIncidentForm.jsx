@@ -14,23 +14,66 @@ function CreateIncidentForm({ organizationId, services, onIncidentCreated, onClo
     organization_id: organizationId,
     created_by_id: user?.id
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const validateField = (name, value) => {
+    if (!value || value.trim() === '') {
+      return `${name.charAt(0).toUpperCase() + name.slice(1)} cannot be empty`;
+    }
+    if (value.trim().length < 3) {
+      return `${name.charAt(0).toUpperCase() + name.slice(1)} must be at least 3 characters`;
+    }
+    return '';
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Validate on change for text fields
+    if (['title', 'description'].includes(name)) {
+      const error = validateField(name, value);
+      setErrors(prev => ({
+        ...prev,
+        [name]: error
+      }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    // Validate all fields before submission
+    const newErrors = {
+      title: validateField('title', formData.title),
+      description: validateField('description', formData.description),
+      service_id: !formData.service_id ? 'Please select a service' : ''
+    };
+
+    setErrors(newErrors);
+
+    // Check if there are any errors
+    if (Object.values(newErrors).some(error => error !== '')) {
+      setLoading(false);
+      return;
+    }
+
+    // Trim whitespace from text fields
+    const trimmedData = {
+      ...formData,
+      title: formData.title.trim(),
+      description: formData.description.trim()
+    };
+
     try {
-      await createIncident({
-        ...formData,
-        service_id: formData.service_id,
-      });
+      await createIncident(trimmedData);
       onIncidentCreated();
       onClose();
     } catch (err) {
-      console.error('Error creating incident:', err);
       setError(err.response?.data?.detail || 'Failed to create incident');
     } finally {
       setLoading(false);
@@ -60,30 +103,39 @@ function CreateIncidentForm({ organizationId, services, onIncidentCreated, onClo
           <label className="block text-sm font-medium text-gray-300">Title</label>
           <input
             type="text"
+            name="title"
             value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            className="input mt-1"
+            onChange={handleChange}
+            className={`input ${errors.title ? 'border-red-500' : ''}`}
             required
           />
+          {errors.title && (
+            <p className="mt-1 text-sm text-red-400">{errors.title}</p>
+          )}
         </div>
-
+                  
         <div>
           <label className="block text-sm font-medium text-gray-300">Description</label>
           <textarea
+            name="description"
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            className="input mt-1"
+            onChange={handleChange}
+            className={`input mt-1 ${errors.description ? 'border-red-500' : ''}`}
             rows={4}
             required
           />
+          {errors.description && (
+            <p className="mt-1 text-sm text-red-400">{errors.description}</p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-300">Service</label>
           <select
+            name="service_id"
             value={formData.service_id}
-            onChange={(e) => setFormData({ ...formData, service_id: e.target.value })}
-            className="input mt-1"
+            onChange={handleChange}
+            className={`input ${errors.service_id ? 'border-red-500' : ''}`}
             required
           >
             <option value="">Select a service</option>
@@ -93,14 +145,18 @@ function CreateIncidentForm({ organizationId, services, onIncidentCreated, onClo
               </option>
             ))}
           </select>
+          {errors.service_id && (
+            <p className="mt-1 text-sm text-red-400">{errors.service_id}</p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-300">Status</label>
             <select
+              name="status"
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              onChange={handleChange}
               className="input mt-1"
             >
               <option value="INVESTIGATING">Investigating</option>
@@ -113,8 +169,9 @@ function CreateIncidentForm({ organizationId, services, onIncidentCreated, onClo
           <div>
             <label className="block text-sm font-medium text-gray-300">Impact</label>
             <select
+              name="impact"
               value={formData.impact}
-              onChange={(e) => setFormData({ ...formData, impact: e.target.value })}
+              onChange={handleChange}
               className="input mt-1"
             >
               <option value="MINOR">Minor</option>
@@ -134,7 +191,7 @@ function CreateIncidentForm({ organizationId, services, onIncidentCreated, onClo
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || Object.values(errors).some(error => error !== '')}
             className="btn-primary"
           >
             {loading ? 'Creating...' : 'Create Incident'}

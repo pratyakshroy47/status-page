@@ -1,37 +1,40 @@
 import React from 'react';
+import StatusBadge from './StatusBadge';
+import { formatDate } from '../utils/dateUtils';
 
-function ServicesList({ services }) {
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'operational':
-        return 'bg-green-100 text-green-800';
-      case 'degraded':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'partial_outage':
-        return 'bg-orange-100 text-orange-800';
-      case 'major_outage':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+function ServicesList({ services, onServiceClick }) {
+  if (!services?.length) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-400">No services found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
       {services.map((service) => (
-        <div key={service.id} className="bg-white rounded-lg shadow p-4">
+        <div 
+          key={service.id} 
+          className="bg-dark-700 rounded-lg shadow-lg p-4 hover:bg-dark-600 transition-all duration-200 cursor-pointer"
+          onClick={() => onServiceClick?.(service)}
+          role="button"
+          tabIndex={0}
+          onKeyPress={(e) => e.key === 'Enter' && onServiceClick?.(service)}
+        >
           <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-lg font-medium">{service.name}</h3>
-              <p className="text-gray-500 text-sm">{service.description}</p>
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium text-white">{service.name}</h3>
+              {service.description && (
+                <p className="text-gray-400 text-sm line-clamp-2">
+                  {service.description}
+                </p>
+              )}
             </div>
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                service.status
-              )}`}
-            >
-              {service.status.replace('_', ' ')}
-            </span>
+            <StatusBadge status={service.status} />
+          </div>
+          <div className="mt-4 text-sm text-gray-400">
+            Last updated: {formatDate(service.updated_at)}
           </div>
         </div>
       ))}

@@ -4,6 +4,8 @@ import Home from './pages/Home';
 import OrganizationStatus from './pages/OrganizationStatus';
 import AuthPage from './pages/AuthPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Wrap PrivateRoute in a component that has access to router hooks
 function PrivateRouteWrapper({ children }) {
@@ -31,31 +33,35 @@ function AuthRouteWrapper({ children }) {
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Layout>
-          <Routes>
-            <Route 
-              path="/auth" 
-              element={
-                <AuthRouteWrapper>
-                  <AuthPage />
-                </AuthRouteWrapper>
-              } 
-            />
-            <Route path="/" element={<Home />} />
-            <Route 
-              path="/:subdomain" 
-              element={
-                <PrivateRouteWrapper>
-                  <OrganizationStatus />
-                </PrivateRouteWrapper>
-              } 
-            />
-          </Routes>
-        </Layout>
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <Router>
+            <Layout>
+              <Routes>
+                <Route 
+                  path="/auth" 
+                  element={
+                    <AuthRouteWrapper>
+                      <AuthPage />
+                    </AuthRouteWrapper>
+                  } 
+                />
+                <Route path="/" element={<Home />} />
+                <Route 
+                  path="/:subdomain" 
+                  element={
+                    <PrivateRouteWrapper>
+                      <OrganizationStatus />
+                    </PrivateRouteWrapper>
+                  } 
+                />
+              </Routes>
+            </Layout>
+          </Router>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

@@ -12,6 +12,7 @@ function UserForm({ onUserCreated }) {
     is_active: true,
     is_superuser: false,
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -37,134 +38,180 @@ function UserForm({ onUserCreated }) {
     fetchOrganizations();
   }, []);
 
+  const validateField = (name, value) => {
+    switch (name) {
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          return 'Please enter a valid email address';
+        }
+        break;
+      case 'password':
+        if (!value.trim()) return 'Password is required';
+        if (value.length < 8) {
+          return 'Password must be at least 8 characters long';
+        }
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
+          return 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+        }
+        break;
+      case 'full_name':
+        if (!isLogin && !value.trim()) return 'Full name is required';
+        if (!isLogin && value.trim().length < 2) {
+          return 'Full name must be at least 2 characters long';
+        }
+        break;
+      case 'organization_id':
+        if (!isLogin && !value) return 'Please select an organization';
+        break;
+    }
+    return '';
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    try {
-      let user;
-      if (isLogin) {
-        // Login with credentials
-        user = await loginUser({
-          email: formData.email,
-          password: formData.password
-        });
-      } else {
-        // Create new user
-        if (!formData.organization_id) {
-          setError('Please select an organization');
-          return;
-        }
-        user = await createUser(formData);
-      }
+    // Validate all fields
+    const newErrors = {};
+    Object.keys(formData).forEach(key => {
+      if (isLogin && !['email', 'password'].includes(key)) return;
+      newErrors[key] = validateField(key, formData[key]);
+    });
 
-      if (onUserCreated) {
+    setErrors(newErrors);
+
+    if (Object.values(newErrors).some(error => error)) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const trimmedData = {
+        ...formData,
+        email: formData.email.trim(),
+        full_name: formData.full_name.trim(),
+      };
+
+      if (isLogin) {
+        const user = await loginUser({
+          email: trimmedData.email,
+          password: trimmedData.password
+        });
+        onUserCreated(user);
+      } else {
+        const user = await createUser(trimmedData);
         onUserCreated(user);
       }
     } catch (err) {
-      console.error('Error:', err);
-      if (err.response?.status === 401) {
-        setError('Invalid email or password');
-      } else {
-        setError(err.response?.data?.detail || `Failed to ${isLogin ? 'login' : 'register'}`);
-      }
+      setError(err.response?.data?.detail || `Failed to ${isLogin ? 'login' : 'register'}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-form">
-      <div className="mb-6 text-center">
-        <h2 className="text-2xl font-bold text-white mb-2">
-          {isLogin ? 'Welcome Back' : 'Create Account'}
-        </h2>
-        <p className="text-gray-400">
-          {isLogin ? 'Sign in to your account' : 'Register a new account'}
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="auth-input-wrapper">
-          <label htmlFor="email" className="form-label">
-            Email address
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300">
+            Email Address
           </label>
           <input
-            id="email"
             type="email"
+            name="email"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="input"
-            placeholder="Enter your email"
+            onChange={handleChange}
+            className={`input ${errors.email ? 'border-red-500' : ''}`}
+            placeholder="you@example.com"
             required
           />
+          {errors.email && (
+            <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+          )}
         </div>
 
-        <div className="auth-input-wrapper">
-          <label htmlFor="password" className="form-label">
+        <div>
+          <label className="block text-sm font-medium text-gray-300">
             Password
           </label>
           <input
-            id="password"
             type="password"
+            name="password"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="input"
-            placeholder="Enter your password"
+            onChange={handleChange}
+            className={`input ${errors.password ? 'border-red-500' : ''}`}
+            placeholder="••••••••"
             required
           />
+          {errors.password && (
+            <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+          )}
         </div>
 
         {!isLogin && (
           <>
-            <div className="auth-input-wrapper">
-              <label htmlFor="fullName" className="form-label">
+            <div>
+              <label className="block text-sm font-medium text-gray-300">
                 Full Name
               </label>
               <input
-                id="fullName"
                 type="text"
+                name="full_name"
                 value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                className="input"
-                placeholder="Enter your full name"
+                onChange={handleChange}
+                className={`input ${errors.full_name ? 'border-red-500' : ''}`}
+                placeholder="John Doe"
                 required
               />
+              {errors.full_name && (
+                <p className="mt-1 text-sm text-red-400">{errors.full_name}</p>
+              )}
             </div>
 
-            <div className="auth-input-wrapper">
-              <label htmlFor="organization" className="form-label">
+            <div>
+              <label className="block text-sm font-medium text-gray-300">
                 Organization
               </label>
               <select
-                id="organization"
+                name="organization_id"
                 value={formData.organization_id}
-                onChange={(e) => setFormData({ ...formData, organization_id: e.target.value })}
-                className="input"
+                onChange={handleChange}
+                className={`input ${errors.organization_id ? 'border-red-500' : ''}`}
                 required
               >
                 <option value="">Select an organization</option>
-                {organizations.map((org) => (
+                {organizations.map(org => (
                   <option key={org.id} value={org.id}>
                     {org.name}
                   </option>
                 ))}
               </select>
+              {errors.organization_id && (
+                <p className="mt-1 text-sm text-red-400">{errors.organization_id}</p>
+              )}
             </div>
           </>
         )}
 
         {error && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
             <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
 
         <button
           type="submit"
-          disabled={loading}
-          className="auth-button"
+          disabled={loading || Object.values(errors).some(error => error)}
+          className="btn-primary w-full"
         >
           {loading ? (
             <span className="flex items-center justify-center">
@@ -182,14 +229,16 @@ function UserForm({ onUserCreated }) {
         <div className="text-center">
           <button
             type="button"
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setErrors({});
+              setError(null);
+            }}
             className="text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors"
           >
             {isLogin ? "Don't have an account? Register" : "Already have an account? Sign in"}
           </button>
         </div>
-
-        {/* Add social login buttons if needed */}
       </form>
     </div>
   );
