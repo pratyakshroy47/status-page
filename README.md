@@ -13,6 +13,7 @@ https://status-page-eta-pearl.vercel.app/
   
   *Click the link above to see the application in action*
 </div>
+
 ## 🌟 Features
 
 - **Real-time Updates**: Instant service status changes and incident updates
